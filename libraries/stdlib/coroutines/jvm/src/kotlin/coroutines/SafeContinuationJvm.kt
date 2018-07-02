@@ -56,7 +56,7 @@ internal actual constructor(
         return when {
             result === RESUMED -> COROUTINE_SUSPENDED // already called continuation, indicate COROUTINE_SUSPENDED upstream
             result is Failure -> throw result.exception
-            else -> result // either COROUTINE_SUSPENDED or data
+            else -> (result as SuccessOrFailure<*>).value // either COROUTINE_SUSPENDED or data
         }
     }
 }
