@@ -110,7 +110,7 @@ internal object CompletedContinuation : Continuation<Any?> {
 
 internal abstract class RestrictedSuspendLambda protected constructor(
     completion: Continuation<Any?>? = null
-) : RestrictedContinuationImpl(completion) {
+) : RestrictedContinuationImpl(completion), Function<Any?> {
 
     public override fun toString(): String =
         if (completion == null)
@@ -122,7 +122,7 @@ internal abstract class RestrictedSuspendLambda protected constructor(
 
 internal abstract class SuspendLambda protected constructor(
     completion: Continuation<Any?>? = null
-) : ContinuationImpl(completion) {
+) : ContinuationImpl(completion), Function<Any?> {
 
     public override fun toString(): String =
         if (completion == null)
