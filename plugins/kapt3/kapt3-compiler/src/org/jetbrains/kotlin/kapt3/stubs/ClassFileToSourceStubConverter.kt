@@ -793,7 +793,7 @@ class ClassFileToSourceStubConverter(
 
     private fun convertAnnotationArgument(constantValue: Any?, value: ResolvedValueArgument?): JCExpression? {
         val args = value?.arguments?.mapNotNull { it.getArgumentExpression() } ?: emptyList()
-        val singleArg = args.singleOrNull()
+        val singleArg by lazy { args.singleOrNull() }
 
         if (constantValue.isOfPrimiviteType()) {
             // Do not inline primitive constants
