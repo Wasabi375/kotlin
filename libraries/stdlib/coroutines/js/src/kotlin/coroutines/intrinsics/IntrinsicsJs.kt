@@ -8,8 +8,7 @@
 package kotlin.coroutines.intrinsics
 
 import kotlin.coroutines.*
-import kotlin.coroutines.jvm.internal.ContinuationImpl
-import kotlin.coroutines.jvm.internal.RestrictedContinuationImpl
+import kotlin.coroutines.jvm.internal.CoroutineImpl
 import kotlin.internal.InlineOnly
 
 /**
@@ -28,7 +27,7 @@ import kotlin.internal.InlineOnly
 @InlineOnly
 public actual inline fun <T> (suspend () -> T).startCoroutineUninterceptedOrReturn(
     completion: Continuation<T>
-): Any? = (this as Function1<Continuation<T>, Any?>).invoke(completion)
+): Any? = this.asDynamic()(completion, false)
 
 /**
  * Starts unintercepted coroutine with receiver type [R] and result type [T] and executes it until its first suspension.
@@ -47,7 +46,7 @@ public actual inline fun <T> (suspend () -> T).startCoroutineUninterceptedOrRetu
 public actual inline fun <R, T> (suspend R.() -> T).startCoroutineUninterceptedOrReturn(
     receiver: R,
     completion: Continuation<T>
-): Any? = (this as Function2<R, Continuation<T>, Any?>).invoke(receiver, completion)
+): Any? = this.asDynamic()(receiver, completion, false)
 
 
 // JVM declarations
@@ -107,12 +106,9 @@ public actual fun <R, T> (suspend R.() -> T).createCoroutineUnchecked(
 public actual fun <T> (suspend () -> T).createCoroutineUnintercepted(
     completion: Continuation<T>
 ): Continuation<Unit> =
-    if (this is RestrictedContinuationImpl)
-        create(completion)
-    else
-        createCoroutineFromSuspendFunction(completion) {
-            (this as Function1<Continuation<T>, Any?>).invoke(completion)
-        }
+    createCoroutineFromSuspendFunction(completion) {
+        this.asDynamic()(completion)
+    }
 
 /**
  * Creates unintercepted coroutine with receiver type [R] and result type [T].
@@ -135,12 +131,8 @@ public actual fun <R, T> (suspend R.() -> T).createCoroutineUnintercepted(
     receiver: R,
     completion: Continuation<T>
 ): Continuation<Unit> =
-    if (this is RestrictedContinuationImpl)
-        create(receiver, completion)
-    else {
-        createCoroutineFromSuspendFunction(completion) {
-            (this as Function2<R, Continuation<T>, Any?>).invoke(receiver, completion)
-        }
+    createCoroutineFromSuspendFunction(completion) {
+        this.asDynamic()(receiver, completion)
     }
 
 /**
@@ -148,27 +140,17 @@ public actual fun <R, T> (suspend R.() -> T).createCoroutineUnintercepted(
  */
 @SinceKotlin("1.3")
 public actual fun <T> Continuation<T>.intercepted(): Continuation<T> =
-    (this as? ContinuationImpl)?.intercepted() ?: this
+    (this as? CoroutineImpl)?.intercepted() ?: this
 
-// INTERNAL DEFINITIONS
 
 private inline fun <T> createCoroutineFromSuspendFunction(
     completion: Continuation<T>,
     crossinline block: () -> Any?
 ): Continuation<Unit> {
-    val context = completion.context
-    return if (context === EmptyCoroutineContext)
-        object : RestrictedContinuationImpl(completion as Continuation<Any?>) {
-            override fun invokeSuspend(result: SuccessOrFailure<Any?>): Any? {
-                result.getOrThrow() // Rethrow exception if trying to start with exception (will be caught by ContinuationImpl.resumeWith
-                return block() // run the block
-            }
+    return object : CoroutineImpl(completion as Continuation<Any?>) {
+        override fun doResume(): Any? {
+            exception?.let { throw it }
+            return block()
         }
-    else
-        object : ContinuationImpl(completion as Continuation<Any?>, context) {
-            override fun invokeSuspend(result: SuccessOrFailure<Any?>): Any? {
-                result.getOrThrow() // Rethrow exception if trying to start with exception (will be caught by ContinuationImpl.resumeWith
-                return block() // run the block
-            }
-        }
+    }
 }

@@ -22,37 +22,27 @@ internal actual constructor(
 
     private var result: Any? = initialResult
 
-    private companion object {
-        fun <T> compareAndSet(c: SafeContinuation<T>, expect: Any?, update: Any?): Boolean {
-            if (c.result === expect) {
-                c.result = update
-                return true
-            }
-            return false
-        }
-    }
-
     public actual override fun resumeWith(result: SuccessOrFailure<T>) {
-        while (true) { // lock-free loop
-            val cur = this.result // atomic read
-            when {
-                cur === UNDECIDED -> if (compareAndSet(this, UNDECIDED, result)) return
-                cur === COROUTINE_SUSPENDED -> if (compareAndSet(this, COROUTINE_SUSPENDED, RESUMED)) {
-                    delegate.resumeWith(result)
-                    return
-                }
-                else -> throw IllegalStateException("Already resumed")
+        val cur = this.result
+        when {
+            cur === UNDECIDED -> {
+                this.result = result
             }
+            cur === COROUTINE_SUSPENDED -> {
+                this.result = RESUMED
+                delegate.resumeWith(result)
+            }
+            else -> throw IllegalStateException("Already resumed")
         }
     }
 
     @PublishedApi
     internal actual fun getOrThrow(): Any? {
-        var result = this.result // atomic read
         if (result === UNDECIDED) {
-            if (compareAndSet(this, UNDECIDED, COROUTINE_SUSPENDED)) return COROUTINE_SUSPENDED
-            result = this.result // reread volatile var
+            result = COROUTINE_SUSPENDED
+            return COROUTINE_SUSPENDED
         }
+        val result = this.result
         return when {
             result === RESUMED -> COROUTINE_SUSPENDED // already called continuation, indicate COROUTINE_SUSPENDED upstream
             result is Failure -> throw result.exception
