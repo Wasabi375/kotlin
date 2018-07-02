@@ -50,8 +50,9 @@ class LazyScriptClassMemberScope(
                 else {
                     "environmentVariables" to builtIns.map.substitute(builtIns.stringType, builtIns.nullableAnyType)!!
                 }
+            val annotations = baseConstructorDescriptor.annotations
             val constructorDescriptor = ClassConstructorDescriptorImpl.createSynthesized(
-                scriptDescriptor, baseConstructorDescriptor.annotations, baseConstructorDescriptor.isPrimary, scriptDescriptor.source
+                scriptDescriptor, annotations, baseConstructorDescriptor.isPrimary, scriptDescriptor.source
             )
             var paramsIndexBase = baseConstructorDescriptor.valueParameters.let { if (it.isEmpty()) 0 else it.last().index + 1 }
             val syntheticParameters =
