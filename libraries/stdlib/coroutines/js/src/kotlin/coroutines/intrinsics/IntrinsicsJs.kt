@@ -8,7 +8,6 @@
 package kotlin.coroutines.intrinsics
 
 import kotlin.coroutines.*
-import kotlin.coroutines.jvm.internal.CoroutineImpl
 import kotlin.internal.InlineOnly
 
 /**

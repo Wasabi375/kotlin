@@ -3,11 +3,9 @@
  * that can be found in the license/LICENSE.txt file.
  */
 
-package kotlin.coroutines.jvm.internal
+package kotlin.coroutines
 
-import kotlin.coroutines.*
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
-import kotlin.coroutines.intrinsics.CoroutineSingletons
 
 @JsName("CoroutineImpl")
 internal abstract class CoroutineImpl(private val resultContinuation: Continuation<Any?>) : Continuation<Any?> {
