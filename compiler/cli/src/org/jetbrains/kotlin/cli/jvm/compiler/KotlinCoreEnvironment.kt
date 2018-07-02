@@ -212,6 +212,13 @@ class KotlinCoreEnvironment private constructor(
         }
         sourceFiles.sortBy { it.virtualFile.path }
 
+        // If not disabled explicitly, we should always support at least the standard script definition
+        if (!configuration.getBoolean(JVMConfigurationKeys.DISABLE_STANDARD_SCRIPT_DEFINITION) &&
+            StandardScriptDefinition !in configuration.getList(JVMConfigurationKeys.SCRIPT_DEFINITIONS)
+        ) {
+            configuration.add(JVMConfigurationKeys.SCRIPT_DEFINITIONS, StandardScriptDefinition)
+        }
+
         val scriptDefinitionProvider = ScriptDefinitionProvider.getInstance(project) as? CliScriptDefinitionProvider
         if (scriptDefinitionProvider != null) {
             scriptDefinitionProvider.setScriptDefinitionsSources(configuration.getList(JVMConfigurationKeys.SCRIPT_DEFINITIONS_SOURCES))
@@ -223,12 +230,6 @@ class KotlinCoreEnvironment private constructor(
                         .flatMap { it.classpath }
                         .distinctBy { it.absolutePath })
             }
-        }
-        // If not disabled explicitly, we should always support at least the standard script definition
-        if (!configuration.getBoolean(JVMConfigurationKeys.DISABLE_STANDARD_SCRIPT_DEFINITION) &&
-            StandardScriptDefinition !in configuration.getList(JVMConfigurationKeys.SCRIPT_DEFINITIONS)
-        ) {
-            configuration.add(JVMConfigurationKeys.SCRIPT_DEFINITIONS, StandardScriptDefinition)
         }
 
         val jdkHome = configuration.get(JVMConfigurationKeys.JDK_HOME)
